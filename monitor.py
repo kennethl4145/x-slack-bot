@@ -24,21 +24,18 @@ def get_latest_tweet():
     params = {"count": "5"}
     try:
         resp = requests.get(url, headers=get_headers(), params=params, timeout=10)
-        print(f"🔍 API response status: {resp.status_code}")
-        print(f"🔍 API response body: {resp.text[:500]}")
         resp.raise_for_status()
         data = resp.json()
 
+        # Correct path: timeline not timeline_v2
         instructions = (
             data.get("data", {})
                 .get("user", {})
                 .get("result", {})
-                .get("timeline_v2", {})
+                .get("timeline", {})
                 .get("timeline", {})
                 .get("instructions", [])
         )
-
-        print(f"🔍 Instructions count: {len(instructions)}")
 
         for instruction in instructions:
             for entry in instruction.get("entries", []):
@@ -124,7 +121,6 @@ def main():
         return
 
     print(f"🚀 Monitoring @{X_USERNAME} (ID: {X_USER_ID}) every {POLL_INTERVAL} seconds...")
-    print(f"🔍 Using RAPIDAPI_KEY: {RAPIDAPI_KEY[:8]}...")
 
     last_id = load_last_post_id()
     print(f"Last known post ID: {last_id or 'None (first run)'}")
