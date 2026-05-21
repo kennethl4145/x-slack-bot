@@ -20,11 +20,12 @@ def get_headers():
 
 
 def get_latest_tweet():
-    """Fetch the latest tweet for underdogmlb."""
     url = f"https://twitter-aio.p.rapidapi.com/user/{X_USER_ID}/tweets"
     params = {"count": "5"}
     try:
         resp = requests.get(url, headers=get_headers(), params=params, timeout=10)
+        print(f"🔍 API response status: {resp.status_code}")
+        print(f"🔍 API response body: {resp.text[:500]}")
         resp.raise_for_status()
         data = resp.json()
 
@@ -36,6 +37,8 @@ def get_latest_tweet():
                 .get("timeline", {})
                 .get("instructions", [])
         )
+
+        print(f"🔍 Instructions count: {len(instructions)}")
 
         for instruction in instructions:
             for entry in instruction.get("entries", []):
@@ -52,7 +55,6 @@ def get_latest_tweet():
                 tweet_id = legacy.get("id_str", "")
                 tweet_text = legacy.get("full_text", "")
 
-                # Skip retweets
                 if tweet_text.startswith("RT @"):
                     continue
 
@@ -65,7 +67,7 @@ def get_latest_tweet():
                     }
 
     except Exception as e:
-        print(f"❌ Error fetching tweets: {e}")
+        print(f"❌ Error fetching tweets: {type(e).__name__}: {e}")
 
     return None
 
@@ -122,6 +124,7 @@ def main():
         return
 
     print(f"🚀 Monitoring @{X_USERNAME} (ID: {X_USER_ID}) every {POLL_INTERVAL} seconds...")
+    print(f"🔍 Using RAPIDAPI_KEY: {RAPIDAPI_KEY[:8]}...")
 
     last_id = load_last_post_id()
     print(f"Last known post ID: {last_id or 'None (first run)'}")
