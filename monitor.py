@@ -4,44 +4,31 @@ import os
 
 # --- CONFIG ---
 X_USERNAME = "underdogmlb"
+X_USER_ID = "1449055868880818178"
 SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
 RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")
 POLL_INTERVAL = 60  # seconds
 LAST_POST_FILE = "last_post_id.txt"
 
-HEADERS = {
-    "x-rapidapi-key": RAPIDAPI_KEY,
-    "x-rapidapi-host": "twitter-aio.p.rapidapi.com",
-    "Content-Type": "application/json",
-}
+
+def get_headers():
+    return {
+        "x-rapidapi-key": RAPIDAPI_KEY,
+        "x-rapidapi-host": "twitter-aio.p.rapidapi.com",
+        "Content-Type": "application/json",
+    }
 
 
-def get_user_id():
-    """Convert @underdogmlb username to userId."""
-    url = f"https://twitter-aio.p.rapidapi.com/user/details/username/{X_USERNAME}"
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        user_id = data.get("data", {}).get("user", {}).get("result", {}).get("rest_id")
-        if user_id:
-            print(f"✅ Resolved @{X_USERNAME} to userId: {user_id}")
-            return user_id
-    except Exception as e:
-        print(f"❌ Error resolving userId: {e}")
-    return None
-
-
-def get_latest_tweet(user_id):
-    """Fetch the latest tweet for a given userId."""
-    url = f"https://twitter-aio.p.rapidapi.com/user/{user_id}/tweets"
+def get_latest_tweet():
+    """Fetch the latest tweet for underdogmlb."""
+    url = f"https://twitter-aio.p.rapidapi.com/user/{X_USER_ID}/tweets"
     params = {"count": "5"}
     try:
-        resp = requests.get(url, headers=HEADERS, params=params, timeout=10)
+        resp = requests.get(url, headers=get_headers(), params=params, timeout=10)
         resp.raise_for_status()
         data = resp.json()
 
-        entries = (
+        instructions = (
             data.get("data", {})
                 .get("user", {})
                 .get("result", {})
@@ -50,7 +37,7 @@ def get_latest_tweet(user_id):
                 .get("instructions", [])
         )
 
-        for instruction in entries:
+        for instruction in instructions:
             for entry in instruction.get("entries", []):
                 tweet_result = (
                     entry.get("content", {})
@@ -134,20 +121,14 @@ def main():
         print("❌ RAPIDAPI_KEY environment variable not set!")
         return
 
-    print(f"🚀 Monitoring @{X_USERNAME} every {POLL_INTERVAL} seconds...")
-
-    # Resolve userId once at startup
-    user_id = get_user_id()
-    if not user_id:
-        print("❌ Could not resolve userId. Check your API key and username.")
-        return
+    print(f"🚀 Monitoring @{X_USERNAME} (ID: {X_USER_ID}) every {POLL_INTERVAL} seconds...")
 
     last_id = load_last_post_id()
     print(f"Last known post ID: {last_id or 'None (first run)'}")
 
     while True:
         try:
-            tweet = get_latest_tweet(user_id)
+            tweet = get_latest_tweet()
 
             if tweet is None:
                 print("⚠️  Could not fetch tweet. Retrying next cycle...")
